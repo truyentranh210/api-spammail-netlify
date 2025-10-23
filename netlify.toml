@@ -1,9 +1,3 @@
 [build]
   functions = "netlify/functions"
-  publish = "."
-
-[[redirects]]
-  from = "/mail/*"
-  to = "/.netlify/functions/mail/:splat"
-  status = 200
-  force = true
+  node_bundler = "esbuild"
