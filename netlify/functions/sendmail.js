@@ -1,75 +1,65 @@
 import nodemailer from "nodemailer";
 
-export default async (req, res) => {
+export default async function handler(req, res) {
   const url = new URL(req.url);
   const path = url.pathname.split("/").filter(Boolean);
 
-  // Route /home
-  if (path[1] === "home") {
+  // /home
+  if (path[0] === "home") {
     return new Response(
       JSON.stringify({
         message: "📧 Hướng dẫn sử dụng API gửi mail:",
         usage: "/.netlify/functions/sendmail/mail/{subject}/{content}/{times}/{delay}/{to}/{apikey}",
         example:
-          "/.netlify/functions/sendmail/mail/Test/Hello%20from%20Netlify/3/2s/test@gmail.com/minhhocgioi",
+          "/.netlify/functions/sendmail/mail/Hello/This%20is%20a%20test/3/2s/test@gmail.com/minhhocgioi",
       }),
       { headers: { "Content-Type": "application/json" } }
     );
   }
 
-  // Route /mail/:subject/:content/:times/:delay/:to/:apikey
-  if (path[1] === "mail") {
-    const subject = decodeURIComponent(path[2] || "");
-    const content = decodeURIComponent(path[3] || "");
-    const times = parseInt(path[4]) || 1;
-    const delay = parseFloat(path[5]) * 1000 || 1000;
-    const to = decodeURIComponent(path[6] || "");
-    const apiKey = path[7];
-
-    if (apiKey !== "minhhocgioi") {
+  // /mail/:subject/:content/:times/:delay/:to/:apikey
+  if (path[0] === "mail") {
+    const [_, subject, content, times, delaySec, to, apikey] = path;
+    if (apikey !== "minhhocgioi") {
       return new Response(
         JSON.stringify({ error: "❌ Sai API key!" }),
         { status: 401, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    if (!subject || !content || !to) {
+    const EMAIL = process.env.EMAIL;
+    const PASSWORD = process.env.PASSWORD;
+
+    if (!EMAIL || !PASSWORD)
       return new Response(
         JSON.stringify({
-          error: "Thiếu tham số! Cần: subject, content, times, delay, to, apikey",
+          error: "⚠️ Chưa khai báo EMAIL hoặc PASSWORD trong biến môi trường Netlify!",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 500, headers: { "Content-Type": "application/json" } }
       );
-    }
-
-    // Gmail account
-    const EMAIL = "minhgemini2k9@gmail.com";
-    const PASSWORD = "kuzz yzhl rwkl yjso"; // app password
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
-      auth: {
-        user: EMAIL,
-        pass: PASSWORD,
-      },
+      auth: { user: EMAIL, pass: PASSWORD },
     });
 
-    // Gửi mail nhiều lần
-    for (let i = 0; i < times; i++) {
+    const timesNum = parseInt(times) || 1;
+    const delay = parseFloat(delaySec) * 1000 || 1000;
+
+    for (let i = 0; i < timesNum; i++) {
       await transporter.sendMail({
         from: EMAIL,
         to,
-        subject,
-        text: content,
+        subject: decodeURIComponent(subject),
+        text: decodeURIComponent(content),
       });
-      console.log(`✅ Sent mail ${i + 1}/${times} to ${to}`);
-      if (i < times - 1) await new Promise((r) => setTimeout(r, delay));
+      if (i < timesNum - 1) await new Promise((r) => setTimeout(r, delay));
     }
 
     return new Response(
       JSON.stringify({
-        status: "✅ Đã gửi thành công!",
-        sent: times,
+        success: true,
+        sent: timesNum,
         to,
         delay: delay / 1000 + "s",
       }),
@@ -77,9 +67,9 @@ export default async (req, res) => {
     );
   }
 
-  // Default 404
+  // Mặc định: 404
   return new Response(JSON.stringify({ error: "404 - Not Found" }), {
     status: 404,
     headers: { "Content-Type": "application/json" },
   });
-};
+}
