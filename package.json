@@ -1,6 +1,7 @@
 {
-  "name": "netlify-mail-api",
+  "name": "api-spam-mail",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {
     "nodemailer": "^6.9.5"
   }
