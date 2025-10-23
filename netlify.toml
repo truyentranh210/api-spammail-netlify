@@ -1,3 +1,14 @@
 [build]
   functions = "netlify/functions"
   node_bundler = "esbuild"
+  publish = "."
+
+[[redirects]]
+  from = "/home"
+  to = "/.netlify/functions/sendmail/home"
+  status = 200
+
+[[redirects]]
+  from = "/mail/*"
+  to = "/.netlify/functions/sendmail/mail/:splat"
+  status = 200
